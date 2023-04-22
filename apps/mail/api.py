@@ -6,6 +6,7 @@ from apps.models import Mail, ControlMessage
 
 router = APIRouter()
 
+
 @router.get("/is_active/")
 async def is_active():
     return {}

@@ -1,6 +1,7 @@
 import aiohttp
 from apps.models import Mail
 
+
 async def check_is_node_active(
     session: aiohttp.ClientSession,
     node_url: str,

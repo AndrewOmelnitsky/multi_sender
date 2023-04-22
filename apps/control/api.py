@@ -12,6 +12,7 @@ from apps.models import Message, Mail, ControlMessage
 
 router = APIRouter()
 
+
 @router.get("/", response_class=HTMLResponse)
 async def read_item(request: Request):
     all_nodes = get_all_nodes_hosts()

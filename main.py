@@ -62,7 +62,7 @@ if __name__ == "__main__":
         name = sys.argv[1]
     except:
         ...
-        
+
     port = None
     try:
         port = int(sys.argv[2])
