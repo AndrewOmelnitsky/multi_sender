@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "multi-sender"
+version = "0.1.0"
+description = ""
+authors = ["AndrewOmelnitsky <andrejomelnickij@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "multi_sender"}]
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.95.1"
+websockets = "^11.0.2"
+uvicorn = "^0.21.1"
+jinja2 = "^3.1.2"
+aiohttp = "^3.8.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

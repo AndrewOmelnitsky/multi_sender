@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+        <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,300" rel="stylesheet" type="text/css">
+    </head>
+    <body>
+        <div class="main">
+            <div class="node-panel">
+                <div class="node-panel__info">
+                    <h2>Sevre info</h2>
+                    <p><b>Name</b>: {{ sever_name }}</p>
+                    <p><b>URL</b>: {{ sever_url }}</p>
+                </div>
+                <div class="nodes">
+                    <h2>Nodes list</h2>
+                    <ul id="nodes-list">
+                        {% for node_name in active_nodes_names %}
+                            <li class="active" onclick="toggleSelectionReciver(this)">
+                                <input  type="text" class="node_name" value="{{ node_name }}">
+                                <p><b>Name</b>: {{ node_name }}</p>
+                                <p><b>URL</b>: {{ active_nodes_names[node_name] }}</p>
+                            </li>
+                        {% endfor %}
+                        {% for node in all_nodes %}
+                            {% if node not in active_nodes %}
+                                <li class="unactive">
+                                    <p><b>URL</b>: {{ node }}</p>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="message-panel">
+                <div class="messages" id="messages">
+                    <div class="messages__message-box start">
+                        <div class="messages__message-box__message">
+                            Server start
+                        </div>
+                    </div>
+                </div>
+                <form class="message-panel__input" action="" onsubmit="sendMessage(event)">
+                    <textarea type="text" placeholder="Write message" id="messageText" autocomplete="off"></textarea>
+                    <button>
+                        <i class="material-icons">&#xe163;</i>
+                    </button>
+                </form>
+            </div>
+            <input type="number" id="connection_update_time" value="{{ connection_update_time }}" style="display: none;">
+        </div>
+        <script>
+            function textAreaAdjust(element) {
+                element.style.height = "1px";
+                element.style.height = (11 + element.scrollHeight)+"px";
+            }
+
+            function textAreaAdjustEvent(e) {
+                textAreaAdjust(e.target);
+            }
+            
+            const messageInput = document.getElementById("messageText");
+            messageInput.addEventListener('input', textAreaAdjustEvent);
+            messageInput.addEventListener('propertychange', textAreaAdjustEvent); // for IE8
+
+            let selectedRecivers = [];
+
+            async function postJSON(url, data) {
+                try {
+                    const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(data),
+                    });
+
+                    const result = await response.json();
+                    console.log("Success:", result);
+                } catch (error) {
+                    console.error("Error:", error);
+                }
+            }
+
+
+            function toggleSelectionReciver(elem) {
+                const node_name_elem = elem.getElementsByClassName("node_name")[0];
+                const node_name = node_name_elem.value;
+
+                if (selectedRecivers.includes(node_name)) {
+                    elem.classList.remove("selected");
+                    selectedRecivers.pop(node_name);
+                } else {
+                    elem.classList.remove("selected");
+                    elem.classList.add("selected");
+                    selectedRecivers.push(node_name);
+                }
+                console.log(selectedRecivers);
+            }
+
+            function sendMessage(event) {
+                if (selectedRecivers.length === 0) {
+                    alert("No nodes selected");
+                    event.preventDefault();
+                    return
+                }
+                
+                const message = {"text": messageInput.value, "recivers": selectedRecivers};
+                postJSON(`http://${location.host}/control/send_mail/`, message);
+
+                messageInput.value = "";
+                textAreaAdjust(messageInput);
+                event.preventDefault();
+            }
+
+            function collectMessaseHTML(data) {
+                data = JSON.parse(data);
+                status_class = data["type"];
+                sender = data["sender_name"];
+                message = data["text"];
+
+                template = `<div class="messages__message-box ${status_class}">\
+                    <div class="messages__message-box__sender">\
+                        ${sender}\
+                    </div>\
+                    <div class="messages__message-box__message">\
+                        ${message}\
+                    </div>\
+                </div>`;
+
+                return template;
+            }
+
+            const connectionUpdateTime = document.getElementById("connection_update_time").value;
+            console.log(document.getElementById("connection_update_time"));
+            console.log(connectionUpdateTime);
+            var intervalId = window.setInterval(function(){
+                console.log("update list");
+            }, connectionUpdateTime);
+            
+
+            
+            // WebSocket
+            console.log(location.host);
+            const ws = new WebSocket(`ws://${location.host}/control/ws`, 'echo-protocol');
+            ws.onmessage = function(event) {
+                const messages = document.getElementById('messages');
+                messageHTML = collectMessaseHTML(event.data);
+                console.log(messageHTML);
+                messages.innerHTML += messageHTML;
+            };
+        </script>
+    </body>
+</html>
