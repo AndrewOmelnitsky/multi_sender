@@ -7,5 +7,5 @@ def get_all_nodes_hosts():
         all_nodes.remove(config.get_server_url())
     except:
         ...
-        
+
     return all_nodes

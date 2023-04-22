@@ -5,7 +5,9 @@ description = ""
 authors = ["AndrewOmelnitsky <andrejomelnickij@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "multi_sender"}]
+packages = [
+    { include = "scripts" },
+]
 
 
 [tool.poetry.dependencies]
@@ -15,6 +17,11 @@ websockets = "^11.0.2"
 uvicorn = "^0.21.1"
 jinja2 = "^3.1.2"
 aiohttp = "^3.8.4"
+
+
+[tool.poetry.scripts]
+run-test-servers = "scripts.test_clients:main"
+run-server = "main:main"
 
 
 [build-system]

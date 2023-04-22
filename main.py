@@ -4,24 +4,27 @@ from fastapi.routing import APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import webbrowser
 
-from main import control_router, mail_router
+from apps.control.api import router as control_router
+from apps.mail.api import router as mail_router
 import config
+import sys
 
 
 def configure():
     # create instance of the app
-    app = FastAPI(title="multi_sender")
+    app = FastAPI(title="multi_sender", debug=config.debug)
 
     # create the instance for the routes
     main_api_router = APIRouter()
 
     # set routes to the app instance
     main_api_router.include_router(mail_router, prefix="/mail", tags=["mails"])
-    main_api_router.include_router(control_router, prefix="/control", tags=["ui", "controls"])
+    main_api_router.include_router(
+        control_router, prefix="/control", tags=["ui", "controls"]
+    )
 
     app.include_router(main_api_router)
     app.mount("/static", config.static_files, name="static")
-
 
     origins = [
         config.get_server_url(),
@@ -35,7 +38,7 @@ def configure():
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     return app
 
 
@@ -46,7 +49,7 @@ def open_control_page():
 
 def main(name=None, port=None):
     config.server_port = port or config.server_port
-    config.name = name or config.anme
+    config.name = name or config.name
     app = configure()
     open_control_page()
     uvicorn.run(app, host=config.server_host, port=config.server_port)
@@ -54,4 +57,16 @@ def main(name=None, port=None):
 
 if __name__ == "__main__":
     # run app on the host and port
-    main()
+    name = None
+    try:
+        name = sys.argv[1]
+    except:
+        ...
+        
+    port = None
+    try:
+        port = int(sys.argv[2])
+    except:
+        ...
+
+    main(name=name, port=port)

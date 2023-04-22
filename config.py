@@ -8,6 +8,7 @@ allowed_hosts = [
     "http://127.0.0.1:8002",
 ]
 
+debug = False
 
 server_host = "127.0.0.1"
 server_port = 8000

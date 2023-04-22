@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Chat</title>
+        <title>{{ sever_name }}</title>
+        <link type="image/png" sizes="32x32" rel="icon" href="{{ url_for('static', path='favicon.png') }}">
         <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,300" rel="stylesheet" type="text/css">
@@ -10,7 +11,7 @@
         <div class="main">
             <div class="node-panel">
                 <div class="node-panel__info">
-                    <h2>Sevre info</h2>
+                    <h2>Server info</h2>
                     <p><b>Name</b>: {{ sever_name }}</p>
                     <p><b>URL</b>: {{ sever_url }}</p>
                 </div>
@@ -18,7 +19,7 @@
                     <h2>Nodes list</h2>
                     <ul id="nodes-list">
                         {% for node_name in active_nodes_names %}
-                            <li class="active" onclick="toggleSelectionReciver(this)">
+                            <li class="active" onclick="toggleSelectionReceiver(this)">
                                 <input  type="text" class="node_name" value="{{ node_name }}">
                                 <p><b>Name</b>: {{ node_name }}</p>
                                 <p><b>URL</b>: {{ active_nodes_names[node_name] }}</p>
@@ -65,7 +66,7 @@
             messageInput.addEventListener('input', textAreaAdjustEvent);
             messageInput.addEventListener('propertychange', textAreaAdjustEvent); // for IE8
 
-            let selectedRecivers = [];
+            let selectedReceivers = [];
 
             async function postJSON(url, data) {
                 try {
@@ -84,30 +85,32 @@
                 }
             }
 
-
-            function toggleSelectionReciver(elem) {
+            function toggleSelectionReceiver(elem) {
                 const node_name_elem = elem.getElementsByClassName("node_name")[0];
                 const node_name = node_name_elem.value;
 
-                if (selectedRecivers.includes(node_name)) {
+                if (selectedReceivers.includes(node_name)) {
                     elem.classList.remove("selected");
-                    selectedRecivers.pop(node_name);
+                    const index = selectedReceivers.indexOf(node_name);
+                    if (index > -1) {
+                        selectedReceivers.splice(index, 1);
+                    }
                 } else {
                     elem.classList.remove("selected");
                     elem.classList.add("selected");
-                    selectedRecivers.push(node_name);
+                    selectedReceivers.push(node_name);
                 }
-                console.log(selectedRecivers);
+                console.log(selectedReceivers);
             }
 
             function sendMessage(event) {
-                if (selectedRecivers.length === 0) {
+                if (selectedReceivers.length === 0) {
                     alert("No nodes selected");
                     event.preventDefault();
                     return
                 }
-                
-                const message = {"text": messageInput.value, "recivers": selectedRecivers};
+
+                const message = {"text": messageInput.value, "receivers": selectedReceivers};
                 postJSON(`http://${location.host}/control/send_mail/`, message);
 
                 messageInput.value = "";
@@ -115,7 +118,7 @@
                 event.preventDefault();
             }
 
-            function collectMessaseHTML(data) {
+            function collectMessageHTML(data) {
                 data = JSON.parse(data);
                 status_class = data["type"];
                 sender = data["sender_name"];
@@ -147,7 +150,7 @@
             const ws = new WebSocket(`ws://${location.host}/control/ws`, 'echo-protocol');
             ws.onmessage = function(event) {
                 const messages = document.getElementById('messages');
-                messageHTML = collectMessaseHTML(event.data);
+                messageHTML = collectMessageHTML(event.data);
                 console.log(messageHTML);
                 messages.innerHTML += messageHTML;
             };
