@@ -175,6 +175,8 @@
 .nodes {
     align-self: flex-start;
     flex: 1;
+    overflow: scroll;
+    max-height: 70%;
     width: 100%;
 }
 
