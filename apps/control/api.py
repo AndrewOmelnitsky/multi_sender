@@ -7,10 +7,11 @@ from config import templates
 from services.utils import get_all_nodes_hosts
 from services.websocket_manager import ws_manager
 from services import nodes_api
-from apps.models import Message, Mail, ControlMessage
+from apps.models import Message, Mail, ControlMessage, ActiveNode, ActiveNodes
 
 
 router = APIRouter()
+url_by_name = {}
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -27,8 +28,6 @@ async def read_item(request: Request):
     context = {
         "request": request,
         "all_nodes": all_nodes,
-        "active_nodes": active_nodes,
-        "active_nodes_names": active_nodes_names,
         "connection_update_time": config.connection_update_time,
         "sever_name": config.name,
         "sever_url": config.get_server_url(),
@@ -41,7 +40,18 @@ async def read_item(request: Request):
 async def get_active_nodes_view():
     checked_nodes = get_all_nodes_hosts()
     nodes = await nodes_api.get_active_nodes(checked_nodes)
-    return {"active_nodes": nodes}
+    url_by_name = await nodes_api.get_nodes_names(nodes)
+
+    active_nodes = []
+    for name, url in url_by_name.items():
+        active_nodes.append(
+            ActiveNode(
+                name=name,
+                url=url,
+            )
+        )
+
+    return ActiveNodes(active_nodes=active_nodes)
 
 
 @router.post("/send_mail/")

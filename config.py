@@ -13,7 +13,7 @@ debug = False
 server_host = "127.0.0.1"
 server_port = 8000
 
-connection_update_time = 10000
+connection_update_time = 10 * 1000
 
 name = uuid1()
 templates = Jinja2Templates(directory="templates")

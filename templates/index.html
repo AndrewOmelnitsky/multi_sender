@@ -17,30 +17,28 @@
                 </div>
                 <div class="nodes">
                     <h2>Nodes list</h2>
-                    <ul id="nodes-list">
-                        {% for node_name in active_nodes_names %}
-                            <li class="active" onclick="toggleSelectionReceiver(this)">
-                                <input  type="text" class="node_name" value="{{ node_name }}">
-                                <p><b>Name</b>: {{ node_name }}</p>
-                                <p><b>URL</b>: {{ active_nodes_names[node_name] }}</p>
-                            </li>
-                        {% endfor %}
+                    <ul id="all-nodes-list" style="display: none;">
                         {% for node in all_nodes %}
-                            {% if node not in active_nodes %}
-                                <li class="unactive">
-                                    <p><b>URL</b>: {{ node }}</p>
-                                </li>
-                            {% endif %}
+                            <li><input type="text" class="node_url" value="{{ node }}"></li>
                         {% endfor %}
                     </ul>
+                    <ul id="nodes-list">
+                    </ul>
+                </div>
+                <div class="node-panel__tools">
+                    <div class="node-panel__tools__info">
+                        <b>Selected nodes: <span id="selection-count"></span></b>
+                    </div>
+                    <div class="node-panel__tools__tool-bar">
+                        <button onclick="clearAllSelection()"><b>clear selections</b></button>
+                        <button onclick="selectAllActiveNodes()"><b>select all</b></button>
+                    </div>
                 </div>
             </div>
             <div class="message-panel">
                 <div class="messages" id="messages">
                     <div class="messages__message-box start">
-                        <div class="messages__message-box__message">
-                            Server start
-                        </div>
+                        <div class="messages__message-box__message">Server start</div>
                     </div>
                 </div>
                 <form class="message-panel__input" action="" onsubmit="sendMessage(event)">
@@ -71,37 +69,177 @@
             async function postJSON(url, data) {
                 try {
                     const response = await fetch(url, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(data),
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(data),
                     });
 
                     const result = await response.json();
-                    console.log("Success:", result);
+                    return result;
                 } catch (error) {
                     console.error("Error:", error);
                 }
             }
 
-            function toggleSelectionReceiver(elem) {
+            async function getJSON(url) {
+                try {
+                    const response = await fetch(url, {method: "GET"});
+
+                    const result = await response.json();
+                    return result;
+                } catch (error) {
+                    console.error("Error:", error);
+                }
+            }
+
+
+            let toggleSelectionReceiverCallbacks = [];
+            function sendToggleSelectionReceiverCallbacks() {
+                toggleSelectionReceiverCallbacks.forEach(func => {
+                    func(selectedReceivers);
+                });
+            }
+
+
+            function getNodeNameByElem(elem) {
                 const node_name_elem = elem.getElementsByClassName("node_name")[0];
                 const node_name = node_name_elem.value;
 
-                if (selectedReceivers.includes(node_name)) {
-                    elem.classList.remove("selected");
-                    const index = selectedReceivers.indexOf(node_name);
-                    if (index > -1) {
-                        selectedReceivers.splice(index, 1);
-                    }
-                } else {
-                    elem.classList.remove("selected");
-                    elem.classList.add("selected");
-                    selectedReceivers.push(node_name);
-                }
-                console.log(selectedReceivers);
+                return node_name
             }
+
+            function selectReceiver(elem) {
+                const node_name = getNodeNameByElem(elem);
+
+                if (selectedReceivers.includes(node_name)) {
+                    return;
+                }
+
+                elem.classList.remove("selected");
+                elem.classList.add("selected");
+                selectedReceivers.push(node_name);
+
+                sendToggleSelectionReceiverCallbacks();
+            }
+
+            function unselectReceiver(elem) {
+                const node_name = getNodeNameByElem(elem);
+
+                if (!(selectedReceivers.includes(node_name))) {
+                    return;
+                }
+
+                elem.classList.remove("selected");
+                const index = selectedReceivers.indexOf(node_name);
+                if (index > -1) {
+                    selectedReceivers.splice(index, 1);
+                }
+
+                sendToggleSelectionReceiverCallbacks();
+            }
+
+            function toggleSelectionReceiver(elem) {
+                const node_name = getNodeNameByElem(elem);
+
+                if (selectedReceivers.includes(node_name)) {
+                    unselectReceiver(elem);
+                } else {
+                    selectReceiver(elem);
+                }
+            }
+
+            function updateSelectionCount(selectionArray) {
+                const outElem = document.getElementById("selection-count");
+                outElem.innerHTML = selectionArray.length;
+            }
+            toggleSelectionReceiverCallbacks.push(updateSelectionCount);
+            updateSelectionCount([]);
+
+            const nodesListElem = document.getElementById("nodes-list");
+            const allNodesListElem = document.getElementById("all-nodes-list");
+            function selectAllActiveNodes() {
+                Array.from(nodesListElem.children).forEach(node => {
+                    if (node.classList.contains("active")) {
+                        selectReceiver(node);
+                    }
+                });
+            }
+
+            function selectNodesByNamesList(names) {
+                Array.from(nodesListElem.children).forEach(node => {
+                    const currentName = node.getElementsByClassName("node_name")[0].value;
+
+                    if (names.includes(currentName)) {
+                        selectReceiver(node);
+                    }
+                });
+            }
+
+            function clearAllSelection() {
+                Array.from(nodesListElem.children).forEach(node => {
+                    if (node.classList.contains("active")) {
+                        unselectReceiver(node);
+                    }
+                });
+            }
+
+            function createUnActiveNode(node_url) {
+                template = `\
+                    <li class="unactive">\
+                        <p><b>URL</b>: ${ node_url }</p>\
+                    </li>\
+                `
+                return template;
+            };
+            function createActiveNode(node_name, node_url) {
+                template = `\
+                    <li class="active" onclick="toggleSelectionReceiver(this)">\
+                        <input type="text" class="node_name" value="${ node_name }">\
+                        <p><b>Name</b>: ${ node_name }</p>\
+                        <p><b>URL</b>: ${ node_url }</p>\
+                    </li>\
+                `
+                return template;
+            };
+
+            function refreshNodeList() {
+                getJSON(`http://${location.host}/control/get_active_nodes/`).then(
+                    response => {
+                        let active_nodes_names = [];
+                        let active_nodes_urls = [];
+
+                        let selected_nodes = [];
+                        let newActiveNodesList = "";
+                        let newUnActiveNodesList = "";
+                        response.active_nodes.forEach(node => {
+                            if (selectedReceivers.includes(node.name)) {
+                                selected_nodes.push(node.name);
+                            }
+
+                            active_nodes_names.push(node.name);
+                            active_nodes_urls.push(node.url);
+                        });
+
+                        Array.from(allNodesListElem.children).forEach(node => {
+                            const currentURL = node.getElementsByClassName("node_url")[0].value;
+                            if (active_nodes_urls.includes(currentURL)) {
+                                const idxOfURL = active_nodes_urls.indexOf(currentURL);
+                                newActiveNodesList += createActiveNode(active_nodes_names[idxOfURL], currentURL);
+                            } else {
+                                newUnActiveNodesList += createUnActiveNode(currentURL);
+                            }
+                        });
+
+                        nodesListElem.innerHTML = newActiveNodesList + newUnActiveNodesList;
+
+                        selectedReceivers = [];
+                        selectNodesByNamesList(selected_nodes);
+                    }
+                );
+            }
+
 
             function sendMessage(event) {
                 if (selectedReceivers.length === 0) {
@@ -118,6 +256,13 @@
                 event.preventDefault();
             }
 
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.keyCode == 13) {
+                    sendMessage(e);
+                }
+            });
+
+
             function collectMessageHTML(data) {
                 data = JSON.parse(data);
                 status_class = data["type"];
@@ -126,10 +271,10 @@
 
                 template = `<div class="messages__message-box ${status_class}">\
                     <div class="messages__message-box__sender">\
-                        ${sender}\
                     </div>\
                     <div class="messages__message-box__message">\
-                        ${message}\
+                        <p class="messages__message-box__message__sender"><b>${sender}</b></p>\
+                        <p>${message}</p>\
                     </div>\
                 </div>`;
 
@@ -137,21 +282,17 @@
             }
 
             const connectionUpdateTime = document.getElementById("connection_update_time").value;
-            console.log(document.getElementById("connection_update_time"));
-            console.log(connectionUpdateTime);
             var intervalId = window.setInterval(function(){
-                console.log("update list");
+                refreshNodeList();
             }, connectionUpdateTime);
-            
+            refreshNodeList();
 
             
             // WebSocket
-            console.log(location.host);
             const ws = new WebSocket(`ws://${location.host}/control/ws`, 'echo-protocol');
             ws.onmessage = function(event) {
                 const messages = document.getElementById('messages');
                 messageHTML = collectMessageHTML(event.data);
-                console.log(messageHTML);
                 messages.innerHTML += messageHTML;
             };
         </script>

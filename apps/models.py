@@ -15,3 +15,12 @@ class ControlMessage(BaseModel):
     type: str
     text: str
     sender_name: str
+
+
+class ActiveNode(BaseModel):
+    url: str
+    name: str
+
+
+class ActiveNodes(BaseModel):
+    active_nodes: list[ActiveNode] = []
