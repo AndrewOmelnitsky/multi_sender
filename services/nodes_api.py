@@ -91,7 +91,7 @@ async def send_mail_to_receiver(
     return False
 
 
-async def send_mail_to_receivers(receivers, mail):
+async def send_mail_to_receivers(receivers: list[str], mail: Mail):
     async with aiohttp.ClientSession() as session:
         for node_url in receivers:
             await send_mail_to_receiver(session, node_url, mail)

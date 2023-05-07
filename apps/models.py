@@ -1,9 +1,16 @@
-from pydantic import BaseModel
+import time
+
+from pydantic import BaseModel, Field
+from services.lamport_clock import lamport_clock
 
 
 class Mail(BaseModel):
     text: str
     sender_name: str
+    author_name: str
+    is_cycle: bool = False
+    time: float = Field(default_factory=time.time)
+    lamport_clock: int = Field(default_factory=lamport_clock.get)
 
 
 class Message(BaseModel):
@@ -15,6 +22,7 @@ class ControlMessage(BaseModel):
     type: str
     text: str
     sender_name: str
+    time: float
 
 
 class ActiveNode(BaseModel):

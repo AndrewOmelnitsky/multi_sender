@@ -11,12 +11,12 @@
         <div class="main">
             <div class="node-panel">
                 <div class="node-panel__info">
-                    <h2>Server info</h2>
+                    <div class="node-panel__title"><h2>Server info</h2></div>
                     <p><b>Name</b>: {{ sever_name }}</p>
                     <p><b>URL</b>: {{ sever_url }}</p>
                 </div>
                 <div class="nodes">
-                    <h2>Nodes list</h2>
+                    <div class="node-panel__title"><h2>Nodes list</h2></div>
                     <ul id="all-nodes-list" style="display: none;">
                         {% for node in all_nodes %}
                             <li><input type="text" class="node_url" value="{{ node }}"></li>
@@ -242,13 +242,14 @@
 
 
             function sendMessage(event) {
-                if (selectedReceivers.length === 0) {
+                if (selectedReceivers.length === 0 || messageInput.value.length === 0) {
                     alert("No nodes selected");
                     event.preventDefault();
                     return
                 }
 
                 const message = {"text": messageInput.value, "receivers": selectedReceivers};
+                // postJSON(`http://${location.host}/control/send_mail/`, message);
                 postJSON(`http://${location.host}/control/send_mail/`, message);
 
                 messageInput.value = "";
@@ -268,13 +269,12 @@
                 status_class = data["type"];
                 sender = data["sender_name"];
                 message = data["text"];
+                unixTime = data["time"];
 
                 template = `<div class="messages__message-box ${status_class}">\
-                    <div class="messages__message-box__sender">\
-                    </div>\
                     <div class="messages__message-box__message">\
                         <p class="messages__message-box__message__sender"><b>${sender}</b></p>\
-                        <p>${message}</p>\
+                        <p>${message}<b><span class="messages__message-box__message__time">${convertUnixTimeToSrt(unixTime)}</span></b></p>\
                     </div>\
                 </div>`;
 
@@ -286,6 +286,24 @@
                 refreshNodeList();
             }, connectionUpdateTime);
             refreshNodeList();
+
+
+            function convertUnixTimeToSrt(time) {
+                // let unix_timestamp = 1549312452
+                // Create a new JavaScript Date object based on the timestamp
+                // multiplied by 1000 so that the argument is in milliseconds, not seconds.
+                const date = new Date(time * 1000);
+                // Hours part from the timestamp
+                const hours = date.getHours();
+                // Minutes part from the timestamp
+                const minutes = "0" + date.getMinutes();
+                // Seconds part from the timestamp
+                const seconds = "0" + date.getSeconds();
+    
+                // Will display time in 10:30:23 format
+                const formattedTime = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+                return formattedTime
+            }
 
             
             // WebSocket

@@ -2,6 +2,7 @@ import subprocess
 import socket
 import sys
 import json
+from pathlib import Path
 
 
 class ProcessManager(object):
@@ -42,7 +43,7 @@ def main(args=sys.argv):
     start_port = 8000
     servers_configs = []
     server_name_template = "Server {id}"
-    server_url_template = "http://127.0.0.1:{port}"
+    server_host = "127.0.0.1"
     allowed_hosts = []
     
     for i in range(number_of_servers):
@@ -53,14 +54,15 @@ def main(args=sys.argv):
             server_name_template.format(id=i+1),
             start_port,
         ))
-        allowed_hosts.append(server_url_template.format(port=start_port))
+        allowed_hosts.append((server_host, start_port, i))
         start_port += 1
 
+    project_dir = Path(__file__).resolve().parent.parent
     with ProcessManager() as process_manager:
         for name, port in servers_configs:
             process = subprocess.Popen([
                 "python",
-                "main.py",
+                str(project_dir / "main.py"),
                 name,
                 str(port),
                 json.dumps(allowed_hosts),

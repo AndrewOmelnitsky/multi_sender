@@ -7,6 +7,7 @@ import json
 
 from apps.control.api import router as control_router
 from apps.mail.api import router as mail_router
+from services.utils import collect_url
 import config
 import sys
 
@@ -28,7 +29,7 @@ def configure():
     app.mount("/static", config.static_files, name="static")
 
     origins = [
-        config.get_server_url(),
+        collect_url(config.server_host, config.server_port),
         f"ws://{config.server_host}:{config.server_port}",
     ]
 
@@ -44,7 +45,7 @@ def configure():
 
 
 def open_control_page():
-    url = f"{config.get_server_url()}/control"
+    url = f"{collect_url(config.server_host, config.server_port)}/control"
     webbrowser.open(url)
 
 
