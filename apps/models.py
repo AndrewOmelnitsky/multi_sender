@@ -4,6 +4,13 @@ from pydantic import BaseModel, Field
 from services.lamport_clock import lamport_clock
 
 
+class Transaction(BaseModel):
+    sender_name: str
+    sender_clock: int
+    receiver_name: str
+    receiver_clock: int
+
+
 class Mail(BaseModel):
     text: str
     sender_name: str

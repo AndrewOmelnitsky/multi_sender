@@ -53,18 +53,20 @@ def main(args=sys.argv):
         servers_configs.append((
             server_name_template.format(id=i+1),
             start_port,
+            i + 1,
         ))
-        allowed_hosts.append((server_host, start_port, i))
+        allowed_hosts.append((server_host, start_port, i + 1))
         start_port += 1
 
     project_dir = Path(__file__).resolve().parent.parent
     with ProcessManager() as process_manager:
-        for name, port in servers_configs:
+        for name, port, priority in servers_configs:
             process = subprocess.Popen([
                 "python",
                 str(project_dir / "main.py"),
                 name,
                 str(port),
+                str(priority),
                 json.dumps(allowed_hosts),
             ])
             process_manager.add(process)
