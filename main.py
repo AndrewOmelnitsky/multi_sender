@@ -7,6 +7,8 @@ import json
 
 from apps.control.api import router as control_router
 from apps.mail.api import router as mail_router
+from apps.clock.api import router as clock_router
+from services.utils import collect_url
 import config
 import sys
 
@@ -19,6 +21,7 @@ def configure():
     main_api_router = APIRouter()
 
     # set routes to the app instance
+    main_api_router.include_router(clock_router, prefix="/clock", tags=["clock"])
     main_api_router.include_router(mail_router, prefix="/mail", tags=["mails"])
     main_api_router.include_router(
         control_router, prefix="/control", tags=["ui", "controls"]
@@ -28,7 +31,7 @@ def configure():
     app.mount("/static", config.static_files, name="static")
 
     origins = [
-        config.get_server_url(),
+        collect_url(config.server_host, config.server_port),
         f"ws://{config.server_host}:{config.server_port}",
     ]
 
@@ -44,14 +47,17 @@ def configure():
 
 
 def open_control_page():
-    url = f"{config.get_server_url()}/control"
+    url = f"{collect_url(config.server_host, config.server_port)}/control"
     webbrowser.open(url)
 
 
-def main(name=None, port=None, allowed_hosts=None):
+def main(name=None, port=None, priority=None, allowed_hosts=None):
     config.allowed_hosts = allowed_hosts or config.allowed_hosts
     config.server_port = port or config.server_port
     config.name = name or config.name
+    config.server_priority = priority or port or config.server_priority
+    print("config.server_priority", config.server_priority)
+    
     
     app = configure()
     open_control_page()
@@ -66,6 +72,12 @@ if __name__ == "__main__":
     except:
         ...
 
+    priority = None
+    try:
+        priority = int(sys.argv[3])
+    except:
+        ...
+    
     port = None
     try:
         port = int(sys.argv[2])
@@ -74,8 +86,8 @@ if __name__ == "__main__":
         
     allowed_hosts = None
     try:
-        allowed_hosts = json.loads(sys.argv[3])
+        allowed_hosts = json.loads(sys.argv[4])
     except:
         ...
 
-    main(name=name, port=port, allowed_hosts=allowed_hosts)
+    main(name=name, port=port, priority=priority, allowed_hosts=allowed_hosts)

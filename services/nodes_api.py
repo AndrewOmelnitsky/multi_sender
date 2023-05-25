@@ -1,5 +1,7 @@
 import aiohttp
-from apps.models import Mail
+import config
+from apps.models import Mail, Transaction
+from services.lamport_clock import lamport_clock
 
 
 async def check_is_node_active(
@@ -38,10 +40,10 @@ async def get_active_nodes(nodes_hosts):
 async def get_node_name(
     session: aiohttp.ClientSession,
     node_url: str,
-    get_name_url: str = "{url}/mail/get_name/",
+    url: str = "{url}/mail/get_name/",
 ) -> str | None:
     try:
-        url = get_name_url.format(url=node_url)
+        url = url.format(url=node_url)
         async with session.get(url) as response:
             if response.status != 200:
                 return None
@@ -72,10 +74,10 @@ async def send_mail_to_receiver(
     session: aiohttp.ClientSession,
     node_url: str,
     mail: Mail,
-    send_mail_url: str = "{url}/mail/",
+    url: str = "{url}/mail/",
 ) -> bool:
     try:
-        url = send_mail_url.format(url=node_url)
+        url = url.format(url=node_url)
         async with session.post(url, json=mail.dict()) as response:
             if response.status != 200:
                 return False
@@ -91,7 +93,85 @@ async def send_mail_to_receiver(
     return False
 
 
-async def send_mail_to_receivers(receivers, mail):
+async def send_mail_to_receivers(receivers: list[str], mail: Mail):
     async with aiohttp.ClientSession() as session:
         for node_url in receivers:
             await send_mail_to_receiver(session, node_url, mail)
+
+
+async def get_clock_info(
+    session: aiohttp.ClientSession,
+    node_url: str,
+    url: str = "{url}/clock/get_clock/",
+):
+    try:
+        url = url.format(url=node_url)
+        async with session.get(url) as response:
+            if response.status != 200:
+                return None
+            
+            content = await response.json()
+            return (content["clock"], content["name"])
+
+    except aiohttp.client_exceptions.ClientConnectorError:
+        ...
+    except Exception as e:
+        print(e)
+        print(type(e))
+
+    return None
+
+async def get_clocks_info(nodes: list[str]):
+    clocks = []
+    async with aiohttp.ClientSession() as session:
+        for node_url in nodes:
+            clock_stat = await get_clock_info(session, node_url)
+            if clock_stat is None:
+                continue
+            
+            clock, name = clock_stat[0], clock_stat[1]
+            
+            clocks.append({
+                "name": name,
+                "clock": clock
+            })
+    
+    clocks.append({
+        "name": config.name,
+        "clock": lamport_clock.get_history()
+    })
+    
+    return clocks
+            
+            
+async def send_transaction_to_loggers(
+    session: aiohttp.ClientSession,
+    node_url: str,
+    transaction: Transaction,
+    url: str = "{url}/clock/add_transaction/",
+):
+    try:
+        url = url.format(url=node_url)
+        async with session.post(url, json=transaction.dict()) as response:
+            if response.status != 200:
+                return False
+
+            return True
+
+    except aiohttp.client_exceptions.ClientConnectorError:
+        ...
+    except Exception as e:
+        print(e)
+        print(type(e))
+
+    return False
+    
+
+async def log_transaction(transaction: Transaction):
+    log_hosts = config.log_hosts
+
+    print(f"{transaction=}")
+    
+    async with aiohttp.ClientSession() as session:
+        for node_url in log_hosts:
+            await send_transaction_to_loggers(session, node_url, transaction)
